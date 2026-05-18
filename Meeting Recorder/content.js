@@ -1147,6 +1147,8 @@
             if (message.action === "manualRecordingStarted") {
                 console.log("🎬 Manual recording started - showing timer in Meet");
                 recordingStarted = true;
+                // Clear any auto-specific messages
+                showMeetStatus("🔴 Manual Recording Started", 3000);
                 sendResponse({ success: true });
             }
     
