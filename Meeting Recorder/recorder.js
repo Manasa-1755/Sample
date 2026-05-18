@@ -529,7 +529,7 @@
             await getMuteStatus();
         };
 
-        muteCheckInterval = setInterval(updateMicrophoneMute, 2000);
+        muteCheckInterval = setInterval(updateMicrophoneMute, 200);
         updateMicrophoneMute();
 
         setupMediaRecorder(tabStream, recordingDestination.stream, audioContext);
