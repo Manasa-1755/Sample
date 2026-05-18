@@ -8,7 +8,7 @@
     let isAutoRecording = false;
     let autoStartTimeout = null;
     let autoRecordPermissions = {};
-
+    
     // Service detection
     function detectService(url) {
         if (url.includes('meet.google.com')) return 'gmeet';
@@ -102,7 +102,7 @@
                             // FORCE start recording regardless of auto-record setting
                             console.log("🎬 FORCE starting Meet recording (auto-record setting ignored)");
                             setTimeout(() => {
-                                startRecordingForTab(tabId, 'gmeet');
+                                // startRecordingForTab(tabId, 'gmeet');
                             }, 3000);
                             
                             // Also show a status message to the user
@@ -254,8 +254,8 @@
         }
 
         console.log("🔄 Resetting states before auto-start...");
-        currentRecordingTab = null;
-        isAutoRecording = false;
+        currentRecordingTab = sender.tab.id;
+        isAutoRecording = true;
 
         await chrome.storage.local.set({ 
             isRecording: false,
@@ -267,7 +267,7 @@
         isAutoRecording = true;
 
         setTimeout(() => {
-            startRecordingForTab(sender.tab.id, 'gmeet');
+            startRecordingForTab(sender.tab.id, 'gmeet', true);
         }, 2000);
 
         return { success: true };
@@ -372,7 +372,7 @@
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🎬 Auto starting recording - Join button clicked (+3s delay completed) at ${timestamp}`);
         console.log("📍 Source tab:", sender.tab.id, sender.tab.url);
-        startRecordingForTab(sender.tab.id, 'teams');
+        startRecordingForTab(sender.tab.id, 'teams', true);
         return { success: true };
     }
 
@@ -429,7 +429,7 @@
             return { success: false, reason: "already_recording" };
         }
         
-        startRecordingForTab(sender.tab.id, 'zoom');
+        startRecordingForTab(sender.tab.id, 'zoom', true);
         return { success: true };
     }
 
@@ -445,13 +445,17 @@
     }
 
     // ==================== COMMON FUNCTIONS ====================
-    function startRecordingForTab(tabId, service) {
-        if (currentRecordingTab && !isAutoRecording) {
+    function startRecordingForTab(tabId, service, isAuto = false) {
+        if (currentRecordingTab && !isAuto) {
             console.log("⚠️ Already recording in tab:", currentRecordingTab);
             return;
         }
 
         console.log(`🎬 Starting recording for ${service} tab:`, tabId);
+        
+        if (isAuto) {
+            isAutoRecording = true;
+        }
         
         chrome.tabs.create({
             url: chrome.runtime.getURL("recorder.html"),
@@ -465,7 +469,7 @@
                 chrome.tabs.sendMessage(recorderTab.id, { 
                     action: "startRecording", 
                     tabId: tabId,
-                    autoRecord: true,
+                    autoRecord: isAuto,
                     service: service
                 }, (response) => {
                     if (chrome.runtime.lastError) {
@@ -653,14 +657,14 @@
                     } else if (service === 'zoom') { 
                         return handleZoomAutoStart(sender);
                     } else if (service === 'gchat') {
-                        startRecordingForTab(sender.tab.id, 'gchat');
+                        startRecordingForTab(sender.tab.id, 'gchat', false);
                         return { success: true };
                     }
                 }
 
                 if (message.action === "manualStartRecording") {
                     console.log("🎬 Manual recording requested for tab:", message.tabId, "service:", message.service);
-                    startRecordingForTab(message.tabId, message.service);
+                    startRecordingForTab(message.tabId, message.service, false);
                     return { success: true };
                 }
 
