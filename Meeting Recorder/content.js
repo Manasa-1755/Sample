@@ -544,7 +544,7 @@
                 } catch(e) {}
                 
                 console.log("✅ Recording started successfully - will auto-save when you leave the call");
-                showStatus(`🔴 RECORDING HUDDLE... 00:00 - Will auto-save when you leave`);
+                // showStatus(`🔴 RECORDING HUDDLE... 00:00 - Will auto-save when you leave`);
                 
                 if (screenStream.getVideoTracks()[0]) {
                     screenStream.getVideoTracks()[0].onended = () => {
@@ -837,7 +837,7 @@
         function startAutoRecordingImmediately() {
             if (isInMeeting && autoRecordEnabled) {
                 console.log("🚀 Auto-record toggled ON mid-meeting - starting recording immediately");
-                showMeetStatus("🟡 Auto recording starting now...");
+                // showMeetStatus("🟡 Auto recording starting now...");
                 // Force reset recording state to ensure fresh start
                 recordingStarted = false;
         
@@ -1073,7 +1073,7 @@
                 
                 if (autoRecordEnabled && !recordingStarted) {
                     console.log("🚀 Auto-starting recording for existing meeting");
-                    showMeetStatus("🟡 Auto recording starting in 3 seconds...", 3000);
+                    // showMeetStatus("🟡 Auto recording starting in 3 seconds...", 3000);
                     setTimeout(async () => {
                         await startAutoRecording();
                     }, 3000);
@@ -1148,7 +1148,7 @@
                 console.log("🎬 Manual recording started - showing timer in Meet");
                 recordingStarted = true;
                 // Clear any auto-specific messages
-                showMeetStatus("🔴 Manual Recording Started", 3000);
+                // showMeetStatus("🔴 Manual Recording Started", 3000);
                 sendResponse({ success: true });
             }
     
@@ -1218,13 +1218,12 @@
                 }
                 sendResponse({ success: true });
             }
-
+            
             if (message.action === "recordingCompleted") {
                 recordingStarted = false;
-                if (autoRecordEnabled) {
-                    showMeetStatus("✅ Auto Recording Completed & Downloaded");
-                } else {
-                    showMeetStatus("✅ Recording Completed & Downloaded");
+                const statusDiv = document.getElementById('meet-recorder-status');
+                if (statusDiv) {
+                    statusDiv.remove();
                 }
                 sendResponse({ success: true });
             }
@@ -1243,14 +1242,28 @@
             await initializeWithStateRecovery();
             await initializeAutoRecord();
             console.log("🔍 Meet Auto Recorder content script fully loaded with state recovery");
-    
+        /*
             // Show initial status based on auto-record setting
             if (autoRecordEnabled) {
                 showMeetStatus("✅ Google Meet's Auto Recording Enabled", 3000);
             } else {
                 showMeetStatus("✅ Google Meet's Manual Recorder Is Ready", 3000);
             }
+        */
         }, 1000);
+
+        // Add this inside gmeetContent() function
+        setInterval(async () => {
+            if (recordingStarted) {
+                const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL("recorder.html") });
+                if (tabs.length === 0) {
+                    console.log("🛑 Recorder tab closed - cleaning up status");
+                    const statusDiv = document.getElementById('meet-recorder-status');
+                    if (statusDiv) statusDiv.remove();
+                    recordingStarted = false;
+                }
+            }
+        }, 2000);
     }
 
     // ==================== MICROSOFT TEAMS ====================
@@ -1595,7 +1608,7 @@
             if (!recordingStarted || autoRecordEnabled) return;
     
             console.log("🛑 Manual recording: Meeting ended, stopping recording and downloading");
-            showTeamsStatus("🟡 Meeting ended - stopping recording...");
+            // showTeamsStatus("🟡 Meeting ended - stopping recording...");
     
             // Stop the recording
             stopManualRecording();
@@ -1605,7 +1618,7 @@
             if (!recordingStarted) return;
     
             console.log("🛑 Stopping manual recording due to meeting end");
-            showTeamsStatus("🟡 Meeting ended - stopping recording...");
+            // showTeamsStatus("🟡 Meeting ended - stopping recording...");
     
             chrome.runtime.sendMessage({ action: "stopRecordingOnMeetingEnd" });
     
@@ -1902,14 +1915,14 @@
             // Load auto-record permission on initialization
             checkAutoRecordPermission().then(() => {
                 console.log("🔐 Teams auto-record permission loaded:", autoRecordEnabled);
-
+            /*
                 // Show initial status based on auto-record setting
                 if (autoRecordEnabled) {
                     showTeamsStatus("✅ Teams Auto Recording Enabled", 3000);
                 } else {
                     showTeamsStatus("✅ Teams Recorder Ready - Manual mode", 3000);
                 }
-
+            */
                 initializeAutoRecord();
             
                 // Then check meeting status
@@ -2013,7 +2026,7 @@
             if (message.action === "manualRecordingStopped") {
                 console.log("🛑 Manual recording stopped");
                 recordingStarted = false;
-                showTeamsStatus("✅ Recording stopped manually");
+                // showTeamsStatus("✅ Recording stopped manually");
                 sendResponse({ success: true });
             }
 
@@ -2043,10 +2056,9 @@
 
             if (message.action === "recordingCompleted") {
                 recordingStarted = false;
-                if (autoRecordEnabled) {
-                    showTeamsStatus("✅ Auto Recording Completed & Downloaded");
-                } else {
-                    showTeamsStatus("✅ Recording Completed & Downloaded");
+                const statusDiv = document.getElementById('teams-recorder-status');
+                if (statusDiv) {
+                    statusDiv.remove();
                 }
                 sendResponse({ success: true });
             }
@@ -2064,6 +2076,18 @@
             initializeDetection();
             console.log("🔍 Teams Auto Recorder initialized");
         }, 1500);
+
+        setInterval(async () => {
+            if (recordingStarted) {
+                const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL("recorder.html") });
+                if (tabs.length === 0) {
+                    console.log("🛑 Teams: Recorder tab closed - cleaning up status");
+                    const statusDiv = document.getElementById('teams-recorder-status');
+                    if (statusDiv) statusDiv.remove();
+                    recordingStarted = false;
+                }
+            }
+        }, 2000);
     }
 
     // ==================== ZOOM ====================
@@ -2341,7 +2365,7 @@
             console.log("⏰ Zoom: Starting 3-second delay before recording...");
             
             if (autoRecordEnabled) {
-                showZoomStatus("🟡 Auto recording starting in 3 seconds...");
+                // showZoomStatus("🟡 Auto recording starting in 3 seconds...");
             }
             
             meetingStartTimeout = setTimeout(() => {
@@ -2448,13 +2472,14 @@
             recordingStarted = true;
             
             showRecordingPopup();
-            
+            /*
             // Only show auto-recording status if auto-record is enabled
             if (autoRecordEnabled) {
                 showZoomStatus("🔴 Auto Recording Started");
             } else {
                 showZoomStatus("🔴 Recording Started");
             }
+            */
 
             chrome.runtime.sendMessage({ 
                 action: "autoStartRecording",
@@ -2480,12 +2505,14 @@
             
             console.log("🛑 Zoom: Stopping recording and downloading...");
             
+            /*
             // Show appropriate status based on recording mode
             if (autoRecordEnabled) {
                 showZoomStatus("🟡 Auto Recording Stopped - Downloading...");
             } else {
                 showZoomStatus("🟡 Recording Stopped - Downloading...");
             }
+            */
             
             // CLEAN UP ALL UI ELEMENTS
             hideRecordingPopup();
@@ -2564,12 +2591,14 @@
             // Just log that recording popup was requested
             console.log("🎬 Recording popup requested - using top-right status instead");
             
+            /*
             // Ensure top-right status shows recording
             if (autoRecordEnabled) {
                 showZoomStatus("🔴 Auto Recording Started");
             } else {
                 showZoomStatus("🔴 Recording Started");
             }
+                */
         }
 
         function updateRecordingTimer(time) {
@@ -2654,15 +2683,15 @@
                                document.querySelector('.zm-btn.join-audio-by-voip__join-btn');
                     if (meetingDetected && !isInMeeting) {
                         console.log("🚀 Zoom: Meeting detected with auto-record enabled - starting recording");
-                        showZoomStatus("🟡 Auto recording starting in 3 seconds...");
+                        // showZoomStatus("🟡 Auto recording starting in 3 seconds...");
                         startMeetingWithDelay();
                     } else if (isInMeeting && !recordingStarted) {
                         console.log("🚀 Zoom: Already in meeting with auto-record enabled - starting recording");
-                        showZoomStatus("🟡 Auto recording starting now...");
+                        // showZoomStatus("🟡 Auto recording starting now...");
                         startAutoRecording();
                     } else if (isInMeeting && !autoRecordEnabled) {
                         // If we're in meeting but auto-record is disabled, show ready status
-                        showZoomStatus("✅ In Zoom meeting - Ready for manual recording");
+                        // showZoomStatus("✅ In Zoom meeting - Ready for manual recording");
                     }
                 }, 500);
 
@@ -2696,24 +2725,23 @@
                 console.log("🎬 Zoom: Manual recording started");
                 recordingStarted = true;
                 showRecordingPopup();
-                showZoomStatus("🔴 Recording Started");                
+                // showZoomStatus("🔴 Recording Started");                
                 sendResponse({ success: true });
             }
 
             if (message.action === "manualRecordingStopped") {
                 console.log("🛑 Zoom: Manual recording stopped");
                 recordingStarted = false;
-                showZoomStatus("🟡 Recording Stopped - Downloading...");                
+                // showZoomStatus("🟡 Recording Stopped - Downloading...");                
                 hideRecordingPopup();
                 sendResponse({ success: true });
             }
 
             if (message.action === "recordingCompleted") {
                 recordingStarted = false;
-                if (autoRecordEnabled) {
-                    showZoomStatus("✅ Auto Recording Completed & Downloaded");
-                } else {
-                    showZoomStatus("✅ Recording Completed & Downloaded");
+                const statusDiv = document.getElementById('zoom-recorder-status');
+                if (statusDiv) {
+                    statusDiv.remove();
                 }
                 sendResponse({ success: true });
             }
@@ -2750,6 +2778,19 @@
     
             console.log("✅ Zoom Auto Recorder initialized");
         }, 1000);
+
+        // Add this inside zoomContent() function, near the bottom where other intervals are
+        setInterval(async () => {
+            if (recordingStarted) {
+                const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL("recorder.html") });
+                if (tabs.length === 0) {
+                    console.log("🛑 Zoom: Recorder tab closed - cleaning up status");
+                    const statusDiv = document.getElementById('zoom-recorder-status');
+                    if (statusDiv) statusDiv.remove();
+                    recordingStarted = false;
+                }
+            }
+        }, 2000);
 
         console.log("🔍 Zoom Auto Recorder content script loaded");
     }
