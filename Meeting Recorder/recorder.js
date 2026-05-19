@@ -154,6 +154,12 @@
     }
 
     function downloadRecording() {
+        // STOP THE TIMER FIRST - THIS STOPS FURTHER UPDATES
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
         if (!recordedChunks.length) {
             console.error("❌ No recording data available");
             safeSetStatus("❌ No recording data");
@@ -161,7 +167,7 @@
             if (currentService === 'gmeet') {
                 broadcastToMeetTab(message);
             } else if (currentService === 'zoom') {
-                broadcastToZoomTab(message);
+                updateZoomStatus(message);
             }
             return;
         }
@@ -172,7 +178,7 @@
         const url = URL.createObjectURL(blob);
         const timestamp = new Date().toISOString().replace(/[:.]/g,'-').replace('T','_').split('Z')[0];
         const filename = `${currentService}-recording-${timestamp}.webm`;
-
+        /*
         if (currentService === 'gmeet') {
             const stoppedMessage = isAutoRecord ? "🟡 Auto Recording Stopped" : "🟡 Recording Stopped";
             broadcastToMeetTab(stoppedMessage);
@@ -181,8 +187,9 @@
             broadcastToTeamsTab(stoppedMessage);
         } else if (currentService === 'zoom') {
             const stoppedMessage = isAutoRecord ? "🟡 Auto Recording Stopped" : "🟡 Recording Stopped";
-            broadcastToZoomTab(stoppedMessage);
+            updateZoomStatus(stoppedMessage);
         }
+        */
 
         chrome.downloads.download({ url, filename, saveAs: false }, (downloadId) => {
             if (chrome.runtime.lastError) {
@@ -198,17 +205,20 @@
                 console.log("✅ DOWNLOAD started with ID:", downloadId);
             }
             
+            /*
             const downloadedMessage = isAutoRecord ? "✅ Auto Recording Downloaded" : "✅ Recording Downloaded";
             if (currentService === 'gmeet') {
                 broadcastToMeetTab(downloadedMessage);
             } else if (currentService === 'teams') {
                 broadcastToTeamsTab(downloadedMessage);
             } else if (currentService === 'zoom') {
-                broadcastToZoomTab(downloadedMessage);
+                updateZoomStatus(downloadedMessage);
             }
+            */
             
             chrome.runtime.sendMessage({ action: "recordingCompleted" });
-            safeSetStatus("✅ Recording Auto-Downloaded!");
+            
+            // safeSetStatus("✅ Recording Auto-Downloaded!");
 
             isRecording = false;
 
@@ -345,21 +355,24 @@
         }
 
         try {
+            /*
             if (isAutoRecord) {
                 safeSetStatus("🟡 Auto recording starting...");
                 if (currentService === 'gmeet') {
                     broadcastToMeetTab("🟡 Auto recording starting...");
                 }  else if (currentService === 'zoom') {
-                    broadcastToZoomTab("🟡 Auto recording starting...");
+                    updateZoomStatus("🟡 Auto recording starting...");
                 }
+                
             } else {
                 safeSetStatus("🟡 Starting recording...");
                 if (currentService === 'gmeet') {
                     broadcastToMeetTab("🟡 Starting recording...");
                 } else if (currentService === 'zoom') {
-                   broadcastToZoomTab("🟡 Starting recording...");
+                   updateZoomStatus("🟡 Starting recording...");
                 }
             }
+            */
             
             await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -432,7 +445,7 @@
                     } else if (currentService == 'teams') {
                          broadcastToTeamsTab("❌ Permission needed - please click extension icon once to grant access");
                     } else if (currentService === 'zoom') {
-                        broadcastToZoomTab("❌ Permission needed - please click extension icon once to grant access");
+                        updateZoomStatus("❌ Permission needed - please click extension icon once to grant access");
                     }
                 
                     // For auto-record, we can retry after a delay
@@ -468,7 +481,7 @@
             if (currentService === 'gmeet') {
                 broadcastToMeetTab("❌ Recording failed.\n");
             } else if (currentService === 'zoom') {
-                broadcastToZoomTab("❌ Recording failed. \nTry clicking the Reset button in UI to restart auto-recording.");
+                updateZoomStatus("❌ Recording failed. \nTry clicking the Reset button in UI to restart auto-recording.");
             }
             cleanup();
         }
@@ -699,6 +712,7 @@
 
             isRecording = false;
 
+            /*
             if (currentService === 'gmeet') {
                 if (isAutoRecord) {
                     broadcastToMeetTab("🟡 Auto Recording Stopped");
@@ -713,11 +727,12 @@
                 }
             } else if (currentService === 'zoom') {
                 if (isAutoRecord) {
-                    broadcastToZoomTab("🟡 Auto Recording Stopped");
+                    updateZoomStatus(message);("🟡 Auto Recording Stopped");
                 } else {
-                    broadcastToZoomTab("🟡 Recording Stopped");
+                    updateZoomStatus("🟡 Recording Stopped");
                 }
             }
+            */
 
             if (recordedChunks.length > 0) {
                 downloadRecording();
@@ -750,6 +765,7 @@
         chrome.runtime.sendMessage({ action: "recordingStarted" });
         
         console.log("Recording is starting...");
+        /*
         if (currentService === 'gmeet') {
             if (isAutoRecord) {
                 broadcastToMeetTab("🔴 Auto Recording Started");
@@ -764,19 +780,22 @@
             }
         } else if (currentService === 'zoom') {
             if (isAutoRecord) {
-                broadcastToZoomTab("🔴 Auto Recording Started");
+                updateZoomStatus("🔴 Auto Recording Started");
             } else {
-                broadcastToZoomTab("🔴 Recording Started");
+                updateZoomStatus("🔴 Recording Started");
             }
         }
+        */
     }
 
     function stopRecording() {
         if (mediaRecorder && isRecording) {
             console.log("🛑 Stopping recording...");
+            /*
             if (currentService === 'gmeet') {
                 broadcastToMeetTab("🟡 Stopping recording...");
             }
+            */
             mediaRecorder.stop();
         } else {
             console.log("⚠️ No active recording to stop");
@@ -814,6 +833,10 @@
             time: timeStr
         });
     }
+
+    function updateZoomStatus(message, duration = 4000) {
+    chrome.runtime.sendMessage({ action: "showZoomStatus", message: message, duration: duration });
+}
 
     async function setupZoomAudio(tabStream, tabId) {
         let finalStream = tabStream;
@@ -993,37 +1016,29 @@
     });
 
     // ==================== EVENT LISTENERS ====================
-    
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && isRecording && recordedChunks.length > 0) {
+            console.log("👁️ Tab hidden - sending recordingCompleted");
+            chrome.runtime.sendMessage({ action: "recordingCompleted" });
+        }
+    });
+
     let userConfirmedLeave = false;
 
-    window.addEventListener('beforeunload', (event) => {
+    window.addEventListener('beforeunload', () => {
         if (isRecording && recordedChunks.length > 0) {
+            console.log("🛑 Recorder tab closing - sending recordingCompleted");
+            // Send completion message immediately
+            chrome.runtime.sendMessage({ action: "recordingCompleted" });
+            
             if (isAutoRecord) {
-                console.log("🤖 Auto-record: Closing recorder tab - auto-downloading recording");
-                // For auto-record: proceed with download
+                // Try to save the recording
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
-                }    
-            
+                }
                 setTimeout(() => {
                     downloadRecording();
-                }, 500);
-            
-                return '';
-            } else {
-                // For manual recording: Show warning and wait for user decision
-                console.log("🚨 Manual recording: Recorder tab closing warning");
-                event.preventDefault();
-                event.returnValue = 'Recording is in progress. Are you sure you want to leave?';
-            
-                // Set a flag to track user decision
-                setTimeout(() => {
-                    // If we're still here after a short delay, user clicked "Cancel"
-                    userConfirmedLeave = false;
-                    console.log("✅ User clicked Cancel - continuing recording");
                 }, 100);
-            
-                return event.returnValue;
             }
         }
     });
