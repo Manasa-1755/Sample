@@ -102,7 +102,11 @@
                             // FORCE start recording regardless of auto-record setting
                             console.log("🎬 FORCE starting Meet recording (auto-record setting ignored)");
                             setTimeout(() => {
-                                // startRecordingForTab(tabId, 'gmeet');
+                                startRecordingForTab(tabId, 'gmeet', true);
+                                // Wait a bit for recorder to start, then notify Meet tab
+                                setTimeout(() => {
+                                    chrome.tabs.sendMessage(tabId, { action: "recordingStarted" });
+                                }, 5000);
                             }, 3000);
                             
                             // Also show a status message to the user
@@ -409,7 +413,7 @@
                         startRecordingForTab(tabId, 'zoom');
                     }
                 });
-            }, 3000);
+            }, 8000);
         }
     }
 
