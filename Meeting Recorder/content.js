@@ -1229,6 +1229,12 @@
                 sendResponse({ success: true });
             }
 
+            if (message.action === "recordingStarted") {
+                recordingStarted = true;
+                console.log("✅ Meet page notified: Recording has started");
+                sendResponse({ success: true });
+            }
+
             if (message.action === "forceResetAndRetry") {
                 console.log("📨 Received force reset command");
                 forceResetAndRetry();
@@ -2365,7 +2371,7 @@
             meetingStartTimeout = setTimeout(() => {
                 console.log("⏰ Zoom: 3-second delay completed - starting meeting");
                 meetingStarted();
-            }, 3000);
+            }, 8000);
         }
 
         function stopRecording() {
