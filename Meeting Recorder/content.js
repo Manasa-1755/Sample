@@ -44,7 +44,7 @@
         const fileSizeMB = (totalSize / 1024 / 1024).toFixed(2);
         
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        const filename = customFilename || `huddle-${timestamp}-part1.webm`;
+        const filename = customFilename || `huddle_recording_${timestamp}.webm`;
         
         console.log(`💾 Preparing download: ${filename} (${fileSizeMB} MB)`);
         
