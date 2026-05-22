@@ -102,7 +102,7 @@
                             // FORCE start recording regardless of auto-record setting
                             console.log("🎬 FORCE starting Meet recording (auto-record setting ignored)");
                             setTimeout(() => {
-                                startRecordingForTab(tabId, 'gmeet', true, true);
+                                startRecordingForTab(tabId, 'gmeet', true);
                                 // Wait a bit for recorder to start, then notify Meet tab
                                 setTimeout(() => {
                                     chrome.tabs.sendMessage(tabId, { action: "recordingStarted" });
@@ -449,7 +449,7 @@
     }
 
     // ==================== COMMON FUNCTIONS ====================
-    function startRecordingForTab(tabId, service, isAuto = false, extendedFromHuddle = false) {
+    function startRecordingForTab(tabId, service, isAuto = false) {
         if (currentRecordingTab && !isAuto) {
             console.log("⚠️ Already recording in tab:", currentRecordingTab);
             return;
@@ -474,8 +474,7 @@
                     action: "startRecording", 
                     tabId: tabId,
                     autoRecord: isAuto,
-                    service: service,
-                    extendedFromHuddle: extendedFromHuddle
+                    service: service
                 }, (response) => {
                     if (chrome.runtime.lastError) {
                         console.log(`❌ Recorder tab not ready (attempt ${retryCount + 1}/3), retrying...`);
