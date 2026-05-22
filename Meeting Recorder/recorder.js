@@ -16,7 +16,6 @@
     let globalMicGainNode = null; 
     let currentTabId = null;
     let currentService = null;
-    let isExtendedFromHuddle = false;
 
     console.log("🎬 Unified Recorder tab loaded");
 
@@ -175,13 +174,7 @@
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const timestamp = new Date().toISOString().replace(/[:.]/g,'-').replace('T','_').split('Z')[0];
-        let filename;
-        if (currentService === 'gmeet' && isExtendedFromHuddle) {
-            filename = `gmeet-${timestamp}-part2.webm`;
-        } else {
-            filename = `${currentService}-recording-${timestamp}.webm`;
-        }
-
+        const filename = `${currentService}-recording-${timestamp}.webm`;
         /*
         if (currentService === 'gmeet') {
             const stoppedMessage = isAutoRecord ? "🟡 Auto Recording Stopped" : "🟡 Recording Stopped";
@@ -223,7 +216,6 @@
             safeSetStatus("✅ Recording Auto-Downloaded!");
 
             isRecording = false;
-            isExtendedFromHuddle = false;
 
             console.log("🔒 Closing recorder tab in 2 seconds");
             setTimeout(() => {
@@ -277,7 +269,6 @@
         recordedChunks = [];
         isRecording = false;
         isAutoRecord = false;
-        isExtendedFromHuddle = false;
         currentTabId = null;
         
         chrome.storage.local.set({ 
@@ -303,7 +294,6 @@
                 muteCheckInterval = null;
             }
             isRecording = false;
-            isExtendedFromHuddle = false;
             console.log("✅ Standard cleanup completed");
         }
     }
@@ -971,10 +961,7 @@
         const handleAsync = async () => {
             try {
                 if (message.action === "startRecording") {
-                    isExtendedFromHuddle = false; // Reset for each new recording
-                    
                     isAutoRecord = message.autoRecord || false;
-                    isExtendedFromHuddle = message.extendedFromHuddle || false; 
                     currentTabId = message.tabId;
                     currentService = message.service || 'gmeet';
                     console.log("🎬 Starting recording, service:", currentService, "auto mode:", isAutoRecord, "tabId:", currentTabId);
